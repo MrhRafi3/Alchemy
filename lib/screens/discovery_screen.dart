@@ -6,10 +6,44 @@ import '../data/element_data.dart';
 import '../models/element_model.dart';
 import '../providers/alchemy_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/alchemical_components.dart';
 import 'element_details_screen.dart';
 
-class DiscoveryScreen extends StatelessWidget {
+class DiscoveryScreen extends StatefulWidget {
   const DiscoveryScreen({super.key});
+
+  @override
+  State<DiscoveryScreen> createState() => _DiscoveryScreenState();
+}
+
+class _DiscoveryScreenState extends State<DiscoveryScreen> {
+  final TransformationController _transformationController =
+      TransformationController();
+
+  @override
+  void dispose() {
+    _transformationController.dispose();
+    super.dispose();
+  }
+
+  void _resetZoom() {
+    HapticHelper.light();
+    _transformationController.value = Matrix4.identity();
+  }
+
+  void _zoomIn() {
+    HapticHelper.light();
+    final matrix = _transformationController.value.clone();
+    matrix.scaleByDouble(1.25, 1.25, 1.0, 1.0);
+    _transformationController.value = matrix;
+  }
+
+  void _zoomOut() {
+    HapticHelper.light();
+    final matrix = _transformationController.value.clone();
+    matrix.scaleByDouble(0.8, 0.8, 1.0, 1.0);
+    _transformationController.value = matrix;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,32 +56,101 @@ class DiscoveryScreen extends StatelessWidget {
     final alchemy = context.read<AlchemyProvider>();
 
     return SafeArea(
-      child: Column(
+      child: Stack(
         children: [
-          _DiscoveryHeader(
-            alchemy: alchemy,
-            discoveryCount: discoveredIds.length,
-            languageCode: languageCode,
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: InteractiveViewer(
-              minScale: 0.65,
-              maxScale: 2.5,
-              boundaryMargin: const EdgeInsets.all(120),
-              constrained: false,
-              child: SizedBox(
-                width: 900,
-                height: 680,
-                child: _DiscoveryMap(
-                  elements: ElementData.allElements,
-                  discoveredIds: discoveredIds,
-                  languageCode: languageCode,
+          Column(
+            children: [
+              _DiscoveryHeader(
+                alchemy: alchemy,
+                discoveryCount: discoveredIds.length,
+                languageCode: languageCode,
+              ),
+              const SizedBox(height: 6),
+              Expanded(
+                child: ClipRect(
+                  child: InteractiveViewer(
+                    transformationController: _transformationController,
+                    minScale: 0.5,
+                    maxScale: 2.8,
+                    boundaryMargin: const EdgeInsets.all(160),
+                    constrained: false,
+                    child: SizedBox(
+                      width: 1100,
+                      height: 840,
+                      child: _DiscoveryMap(
+                        elements: ElementData.allElements,
+                        discoveredIds: discoveredIds,
+                        languageCode: languageCode,
+                      ),
+                    ),
+                  ),
                 ),
               ),
+            ],
+          ),
+
+          // Floating Zoom & Center Controls
+          Positioned(
+            right: 18,
+            bottom: 24,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _FloatingControlButton(
+                  icon: Icons.add,
+                  tooltip: 'Zoom in',
+                  onTap: _zoomIn,
+                ),
+                const SizedBox(height: 8),
+                _FloatingControlButton(
+                  icon: Icons.remove,
+                  tooltip: 'Zoom out',
+                  onTap: _zoomOut,
+                ),
+                const SizedBox(height: 8),
+                _FloatingControlButton(
+                  icon: Icons.center_focus_strong_rounded,
+                  tooltip: 'Reset view',
+                  onTap: _resetZoom,
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FloatingControlButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  const _FloatingControlButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceLight.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.border),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Icon(icon, size: 20, color: AppTheme.primaryText),
+        ),
       ),
     );
   }
@@ -79,52 +182,42 @@ class _DiscoveryHeader extends StatelessWidget {
                     english: 'Discovery Tree',
                     bangla: 'আবিষ্কার গাছ',
                   ),
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineMedium,
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 4),
                 Text(
                   alchemy.text(
-                    english: 'Trace the elements you have discovered.',
-                    bangla: 'আপনি আবিষ্কার করা উপাদানগুলোর পথ দেখুন।',
+                    english:
+                        'Interactive constellation of cosmic element synthesis.',
+                    bangla:
+                        'মহাজাগতিক উপাদান সংশ্লেষণের ইন্টারেক্টিভ মানচিত্র।',
                   ),
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium,
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
             ),
           ),
           const SizedBox(width: 12),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 11,
-              vertical: 8,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: AppTheme.surface.withValues(alpha: 0.72),
-              borderRadius: BorderRadius.circular(13),
-              border: Border.all(
-                color: AppTheme.border,
-              ),
+              color: AppTheme.surface.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppTheme.border),
             ),
             child: Row(
               children: [
                 const Icon(
                   Icons.auto_awesome,
                   size: 15,
-                  color: AppTheme.accent,
+                  color: AppTheme.accentLight,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   '$discoveryCount',
-                  style: Theme.of(context)
-                      .textTheme
-                      .labelSmall
-                      ?.copyWith(
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: AppTheme.primaryText,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
@@ -162,32 +255,48 @@ class _DiscoveryMap extends StatelessWidget {
           ),
         ),
         for (final element in elements)
-          Positioned(
-            left: positions[element.id]!.dx - 46,
-            top: positions[element.id]!.dy - 46,
-            child: _DiscoveryNode(
-              element: element,
-              isDiscovered: discoveredIds.contains(element.id),
-              languageCode: languageCode,
+          if (positions.containsKey(element.id))
+            Positioned(
+              left: positions[element.id]!.dx - 46,
+              top: positions[element.id]!.dy - 46,
+              child: _DiscoveryNode(
+                element: element,
+                isDiscovered: discoveredIds.contains(element.id),
+                languageCode: languageCode,
+              ),
             ),
-          ),
       ],
     );
   }
 
   static const Map<String, Offset> _positions = {
-    'fire': Offset(150, 150),
-    'water': Offset(380, 150),
-    'earth': Offset(610, 150),
-    'air': Offset(760, 290),
+    // Starting Elements Tier
+    'fire': Offset(160, 140),
+    'water': Offset(420, 140),
+    'earth': Offset(680, 140),
+    'air': Offset(940, 140),
 
-    'steam': Offset(265, 290),
-    'lava': Offset(495, 290),
-    'energy': Offset(690, 410),
+    // Tier 1 Discoveries
+    'steam': Offset(280, 290),
+    'lava': Offset(540, 290),
+    'plant': Offset(420, 430),
+    'energy': Offset(820, 290),
+    'cloud': Offset(680, 430),
+    'dust': Offset(940, 430),
 
-    'plant': Offset(265, 450),
-    'cloud': Offset(495, 500),
-    'dust': Offset(700, 560),
+    // Tier 2 Discoveries
+    'stone': Offset(540, 430),
+    'rain': Offset(280, 570),
+    'lightning': Offset(780, 570),
+    'sand': Offset(940, 570),
+    'obsidian': Offset(160, 430),
+
+    // Tier 3 Advanced Syntheses
+    'glass': Offset(940, 710),
+    'life': Offset(420, 710),
+    'metal': Offset(540, 710),
+    'volcano': Offset(160, 710),
+    'storm': Offset(720, 710),
   };
 }
 
@@ -213,13 +322,30 @@ class _ConnectionPainter extends CustomPainter {
     ['air', 'cloud'],
     ['earth', 'dust'],
     ['air', 'dust'],
+    ['lava', 'stone'],
+    ['air', 'stone'],
+    ['water', 'rain'],
+    ['cloud', 'rain'],
+    ['stone', 'sand'],
+    ['air', 'sand'],
+    ['fire', 'glass'],
+    ['sand', 'glass'],
+    ['energy', 'lightning'],
+    ['cloud', 'lightning'],
+    ['energy', 'life'],
+    ['plant', 'life'],
+    ['lava', 'obsidian'],
+    ['water', 'obsidian'],
+    ['stone', 'metal'],
+    ['fire', 'metal'],
+    ['cloud', 'storm'],
+    ['lightning', 'storm'],
+    ['earth', 'volcano'],
+    ['lava', 'volcano'],
   ];
 
   @override
-  void paint(
-      Canvas canvas,
-      Size size,
-      ) {
+  void paint(Canvas canvas, Size size) {
     for (final connection in connections) {
       final first = connection[0];
       final second = connection[1];
@@ -232,29 +358,33 @@ class _ConnectionPainter extends CustomPainter {
       }
 
       final bothDiscovered =
-          discoveredIds.contains(first) &&
-              discoveredIds.contains(second);
+          discoveredIds.contains(first) && discoveredIds.contains(second);
 
       final paint = Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = bothDiscovered ? 1.5 : 1
+        ..strokeWidth = bothDiscovered ? 2.0 : 1.0
         ..strokeCap = StrokeCap.round
         ..color = bothDiscovered
-            ? AppTheme.accent.withValues(alpha: 0.30)
-            : Colors.white.withValues(alpha: 0.045);
+            ? AppTheme.accentLight.withValues(alpha: 0.45)
+            : Colors.white.withValues(alpha: 0.05);
 
-      canvas.drawLine(
-        firstPosition,
-        secondPosition,
-        paint,
-      );
+      canvas.drawLine(firstPosition, secondPosition, paint);
+
+      // Glow effect on discovered branches
+      if (bothDiscovered) {
+        final glowPaint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 4.0
+          ..strokeCap = StrokeCap.round
+          ..color = AppTheme.accent.withValues(alpha: 0.15);
+
+        canvas.drawLine(firstPosition, secondPosition, glowPaint);
+      }
     }
   }
 
   @override
-  bool shouldRepaint(
-      covariant _ConnectionPainter oldDelegate,
-      ) {
+  bool shouldRepaint(covariant _ConnectionPainter oldDelegate) {
     return !setEquals(oldDelegate.discoveredIds, discoveredIds) ||
         !mapEquals(oldDelegate.positions, positions);
   }
@@ -282,7 +412,7 @@ class _DiscoveryNodeState extends State<_DiscoveryNode> {
     if (!widget.isDiscovered) {
       return;
     }
-
+    HapticHelper.light();
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ElementDetailsScreen(
@@ -301,28 +431,16 @@ class _DiscoveryNodeState extends State<_DiscoveryNode> {
     return GestureDetector(
       onTap: widget.isDiscovered ? _openDetails : null,
       onTapDown: widget.isDiscovered
-          ? (_) {
-        setState(() {
-          _pressed = true;
-        });
-      }
+          ? (_) => setState(() => _pressed = true)
           : null,
       onTapUp: widget.isDiscovered
-          ? (_) {
-        setState(() {
-          _pressed = false;
-        });
-      }
+          ? (_) => setState(() => _pressed = false)
           : null,
       onTapCancel: widget.isDiscovered
-          ? () {
-        setState(() {
-          _pressed = false;
-        });
-      }
+          ? () => setState(() => _pressed = false)
           : null,
       child: AnimatedScale(
-        scale: _pressed ? 0.92 : 1,
+        scale: _pressed ? 0.92 : 1.0,
         duration: const Duration(milliseconds: 120),
         child: SizedBox(
           width: 92,
@@ -336,53 +454,34 @@ class _DiscoveryNodeState extends State<_DiscoveryNode> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: widget.isDiscovered
-                      ? AppTheme.surfaceLight.withValues(alpha: 0.90)
+                      ? AppTheme.surfaceLight.withValues(alpha: 0.92)
                       : Colors.white.withValues(alpha: 0.025),
                   border: Border.all(
                     color: widget.isDiscovered
-                        ? color.withValues(
-                      alpha: _borderOpacity(
-                        element.rarity,
-                      ),
-                    )
-                        : Colors.white.withValues(alpha: 0.06),
-                    width: 1.2,
+                        ? color.withValues(alpha: _pressed ? 0.8 : 0.4)
+                        : Colors.white.withValues(alpha: 0.08),
+                    width: widget.isDiscovered ? 1.5 : 1.0,
                   ),
                   boxShadow: widget.isDiscovered
                       ? [
-                    BoxShadow(
-                      color: color.withValues(
-                        alpha: _glowOpacity(
-                          element.rarity,
-                        ),
-                      ),
-                      blurRadius: _glowBlur(
-                        element.rarity,
-                      ),
-                      spreadRadius: 1,
-                    ),
-                  ]
-                      : [],
+                          BoxShadow(
+                            color: color.withValues(
+                              alpha: _pressed ? 0.35 : 0.16,
+                            ),
+                            blurRadius: _pressed ? 24 : 16,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Center(
                   child: widget.isDiscovered
-                      ? Text(
-                    element.icon,
-                    style: TextStyle(
-                      fontSize: 35,
-                      shadows: [
-                        Shadow(
-                          color: color.withValues(alpha: 0.55),
-                          blurRadius: 15,
-                        ),
-                      ],
-                    ),
-                  )
+                      ? ElementSymbol(element: element, size: 30)
                       : Icon(
-                    Icons.lock_outline_rounded,
-                    size: 24,
-                    color: Colors.white.withValues(alpha: 0.18),
-                  ),
+                          Icons.lock_outline_rounded,
+                          size: 22,
+                          color: Colors.white.withValues(alpha: 0.18),
+                        ),
                 ),
               ),
               const SizedBox(height: 7),
@@ -392,15 +491,13 @@ class _DiscoveryNodeState extends State<_DiscoveryNode> {
                     : '???',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context)
-                    .textTheme
-                    .labelSmall
-                    ?.copyWith(
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: widget.isDiscovered
                       ? AppTheme.primaryText
-                      : Colors.white.withValues(alpha: 0.25),
+                      : Colors.white.withValues(alpha: 0.28),
                   fontWeight: widget.isDiscovered
-                      ? FontWeight.w500
+                      ? FontWeight.w600
                       : FontWeight.w400,
                 ),
               ),
@@ -409,50 +506,5 @@ class _DiscoveryNodeState extends State<_DiscoveryNode> {
         ),
       ),
     );
-  }
-
-  double _borderOpacity(ElementRarity rarity) {
-    switch (rarity) {
-      case ElementRarity.common:
-        return 0.20;
-      case ElementRarity.uncommon:
-        return 0.30;
-      case ElementRarity.rare:
-        return 0.40;
-      case ElementRarity.epic:
-        return 0.50;
-      case ElementRarity.legendary:
-        return 0.60;
-    }
-  }
-
-  double _glowOpacity(ElementRarity rarity) {
-    switch (rarity) {
-      case ElementRarity.common:
-        return 0.06;
-      case ElementRarity.uncommon:
-        return 0.09;
-      case ElementRarity.rare:
-        return 0.13;
-      case ElementRarity.epic:
-        return 0.17;
-      case ElementRarity.legendary:
-        return 0.22;
-    }
-  }
-
-  double _glowBlur(ElementRarity rarity) {
-    switch (rarity) {
-      case ElementRarity.common:
-        return 16;
-      case ElementRarity.uncommon:
-        return 20;
-      case ElementRarity.rare:
-        return 24;
-      case ElementRarity.epic:
-        return 28;
-      case ElementRarity.legendary:
-        return 34;
-    }
   }
 }

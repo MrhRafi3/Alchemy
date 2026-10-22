@@ -35,10 +35,30 @@ class AchievementData {
     id: 'into_the_unknown',
     titleEn: 'Into the Unknown',
     titleBn: 'অজানার পথে',
-    descriptionEn: 'Discover every currently available element.',
-    descriptionBn: 'বর্তমানে থাকা সব উপাদান আবিষ্কার করুন।',
+    descriptionEn: 'Discover ten different elements.',
+    descriptionBn: 'দশটি ভিন্ন উপাদান আবিষ্কার করুন।',
     requiredDiscoveries: 10,
     xpReward: 100,
+  );
+
+  static const masterAlchemist = AchievementModel(
+    id: 'master_alchemist',
+    titleEn: 'Master Alchemist',
+    titleBn: 'মাস্টার আলকেমিস্ট',
+    descriptionEn: 'Discover fifteen different elements.',
+    descriptionBn: 'পনেরোটি ভিন্ন উপাদান আবিষ্কার করুন।',
+    requiredDiscoveries: 15,
+    xpReward: 150,
+  );
+
+  static const grandMagus = AchievementModel(
+    id: 'grand_magus',
+    titleEn: 'Grand Magus',
+    titleBn: 'গ্র্যান্ড ম্যাগুস',
+    descriptionEn: 'Master all twenty primordial elements.',
+    descriptionBn: 'সকল বিশটি প্রাথমিক উপাদান আবিষ্কার করুন।',
+    requiredDiscoveries: 20,
+    xpReward: 250,
   );
 
   static const List<AchievementModel> all = [
@@ -46,5 +66,7 @@ class AchievementData {
     apprenticeAlchemist,
     elementHunter,
     intoTheUnknown,
+    masterAlchemist,
+    grandMagus,
   ];
 }

@@ -28,37 +28,39 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('Alchemy app starts cleanly with provider and default Lab state', (
-    WidgetTester tester,
-  ) async {
-    final provider = await _createCleanProvider();
+  testWidgets(
+    'Alchemy app starts cleanly with provider and default Lab state',
+    (WidgetTester tester) async {
+      final provider = await _createCleanProvider();
 
-    await tester.pumpWidget(
-      ChangeNotifierProvider<AlchemyProvider>.value(
-        value: provider,
-        child: const AlchemyApp(),
-      ),
-    );
-    await tester.pump();
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AlchemyProvider>.value(
+          value: provider,
+          child: const AlchemyApp(),
+        ),
+      );
+      await tester.pump();
 
-    expect(find.text('ALCHEMY'), findsOneWidget);
-    expect(find.text('Laboratory'), findsOneWidget);
-    expect(find.text('Fusion Chamber'), findsOneWidget);
-    expect(find.text('Fire'), findsOneWidget);
-    expect(find.text('Water'), findsOneWidget);
-    expect(find.text('Earth'), findsOneWidget);
-    expect(find.text('Air'), findsOneWidget);
-  });
+      expect(find.text('ALCHEMY'), findsOneWidget);
+      expect(find.text('Laboratory'), findsOneWidget);
+      expect(find.text('Fusion Chamber'), findsOneWidget);
+      expect(find.text('Fire'), findsOneWidget);
+      expect(find.text('Water'), findsOneWidget);
+      expect(find.text('Earth'), findsOneWidget);
+      expect(find.text('Air'), findsOneWidget);
+    },
+  );
 
-  testWidgets('AlchemyApp can also bootstrap its own provider when pumped directly', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const AlchemyApp());
-    await tester.pump();
+  testWidgets(
+    'AlchemyApp can also bootstrap its own provider when pumped directly',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(const AlchemyApp());
+      await tester.pump();
 
-    expect(find.text('ALCHEMY'), findsOneWidget);
-    expect(find.byType(NavigationBar), findsOneWidget);
-  });
+      expect(find.text('ALCHEMY'), findsOneWidget);
+      expect(find.byType(NavigationBar), findsOneWidget);
+    },
+  );
 
   testWidgets('Main navigation switches across all four tabs', (
     WidgetTester tester,
@@ -214,8 +216,9 @@ void main() {
         of: find.byType(InteractiveViewer),
         matching: find.byType(CustomPaint),
       );
-      final painterBefore =
-          tester.widget<CustomPaint>(mapCustomPaintFinder.first).painter!;
+      final painterBefore = tester
+          .widget<CustomPaint>(mapCustomPaintFinder.first)
+          .painter!;
 
       // Discover Steam (Fire + Water)
       provider.addElement('fire');
@@ -230,8 +233,9 @@ void main() {
       expect(find.text('Steam'), findsOneWidget);
       expect(find.text('5'), findsOneWidget);
 
-      final painterAfter =
-          tester.widget<CustomPaint>(mapCustomPaintFinder.first).painter!;
+      final painterAfter = tester
+          .widget<CustomPaint>(mapCustomPaintFinder.first)
+          .painter!;
 
       // Regression check: connection painter must detect the new discovery
       expect(painterAfter.shouldRepaint(painterBefore), isTrue);
@@ -246,9 +250,8 @@ void main() {
     'Level-up trigger resets cleanly and persistence failures do not crash gameplay',
     () async {
       final failingProvider = AlchemyProvider(
-        prefsProvider: () => Future<SharedPreferences>.error(
-          Exception('Storage unavailable'),
-        ),
+        prefsProvider: () =>
+            Future<SharedPreferences>.error(Exception('Storage unavailable')),
       );
 
       // Failed preference read falls back safely to defaults

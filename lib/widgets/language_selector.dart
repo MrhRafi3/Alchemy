@@ -2,35 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/alchemy_provider.dart';
+import '../theme/app_theme.dart';
+import 'alchemical_components.dart';
 
 class LanguageSelector extends StatelessWidget {
-  const LanguageSelector({super.key});
+  final bool compact;
+
+  const LanguageSelector({super.key, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
     final alchemy = context.watch<AlchemyProvider>();
 
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: AppTheme.surfaceLight.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-        ),
+        border: Border.all(color: AppTheme.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           _LanguageButton(
-            label: '🇬🇧 English',
+            label: 'EN',
             selected: alchemy.languageCode == 'en',
             onTap: () {
               alchemy.setLanguage('en');
             },
           ),
+          const SizedBox(width: 2),
           _LanguageButton(
-            label: '🇧🇩 বাংলা',
+            label: 'বাংলা',
             selected: alchemy.languageCode == 'bn',
             onTap: () {
               alchemy.setLanguage('bn');
@@ -56,34 +59,43 @@ class _LanguageButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
+      duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         color: selected
-            ? Colors.white.withValues(alpha: 0.12)
+            ? AppTheme.accent.withValues(alpha: 0.22)
             : Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(
+          color: selected
+              ? AppTheme.accent.withValues(alpha: 0.5)
+              : Colors.transparent,
+        ),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: AppTheme.accent.withValues(alpha: 0.15),
+                  blurRadius: 8,
+                ),
+              ]
+            : null,
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(10),
-          onTap: onTap,
+          borderRadius: BorderRadius.circular(11),
+          onTap: () {
+            HapticHelper.selection();
+            onTap();
+          },
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 9,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             child: Text(
               label,
               style: TextStyle(
-                color: selected
-                    ? Colors.white
-                    : Colors.white.withValues(alpha: 0.45),
-                fontSize: 13,
-                fontWeight: selected
-                    ? FontWeight.w600
-                    : FontWeight.w400,
+                color: selected ? AppTheme.primaryText : AppTheme.secondaryText,
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
           ),

@@ -20,8 +20,7 @@ class AchievementUnlockOverlay extends StatefulWidget {
       _AchievementUnlockOverlayState();
 }
 
-class _AchievementUnlockOverlayState
-    extends State<AchievementUnlockOverlay>
+class _AchievementUnlockOverlayState extends State<AchievementUnlockOverlay>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
@@ -41,40 +40,23 @@ class _AchievementUnlockOverlayState
 
     _opacity = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(
-        0.0,
-        0.28,
-        curve: Curves.easeOut,
+      curve: const Interval(0.0, 0.28, curve: Curves.easeOut),
+    );
+
+    _scale = Tween<double>(begin: 0.88, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.45, curve: Curves.easeOutBack),
       ),
     );
 
-    _scale = Tween<double>(
-      begin: 0.88,
-      end: 1.0,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(
-          0.0,
-          0.45,
-          curve: Curves.easeOutBack,
-        ),
-      ),
-    );
-
-    _slide = Tween<Offset>(
-      begin: const Offset(0, -0.35),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(
-          0.0,
-          0.45,
-          curve: Curves.easeOutCubic,
-        ),
-      ),
-    );
+    _slide = Tween<Offset>(begin: const Offset(0, -0.35), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.0, 0.45, curve: Curves.easeOutCubic),
+          ),
+        );
 
     _showAnimation();
   }
@@ -82,9 +64,7 @@ class _AchievementUnlockOverlayState
   Future<void> _showAnimation() async {
     await _controller.forward();
 
-    await Future<void>.delayed(
-      const Duration(milliseconds: 2400),
-    );
+    await Future<void>.delayed(const Duration(milliseconds: 2400));
 
     if (!mounted) {
       return;
@@ -176,13 +156,8 @@ class _AchievementCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isBangla
-                      ? 'অর্জন আনলক হয়েছে'
-                      : 'ACHIEVEMENT UNLOCKED',
-                  style: Theme.of(context)
-                      .textTheme
-                      .labelSmall
-                      ?.copyWith(
+                  isBangla ? 'অর্জন আনলক হয়েছে' : 'ACHIEVEMENT UNLOCKED',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: const Color(0xFFE8C96A),
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.1,
@@ -193,10 +168,7 @@ class _AchievementCard extends StatelessWidget {
                   achievement.getTitle(languageCode),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: AppTheme.primaryText,
                     fontWeight: FontWeight.w700,
                   ),
@@ -206,21 +178,15 @@ class _AchievementCard extends StatelessWidget {
                   achievement.getDescription(languageCode),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(
-                    fontSize: 12,
-                    height: 1.3,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontSize: 12, height: 1.3),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 10),
-          _XpBadge(
-            xp: achievement.xpReward,
-          ),
+          _XpBadge(xp: achievement.xpReward),
         ],
       ),
     );
@@ -240,9 +206,7 @@ class _AchievementIcon extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: gold.withValues(alpha: 0.08),
-        border: Border.all(
-          color: gold.withValues(alpha: 0.24),
-        ),
+        border: Border.all(color: gold.withValues(alpha: 0.24)),
         boxShadow: [
           BoxShadow(
             color: gold.withValues(alpha: 0.16),
@@ -251,11 +215,7 @@ class _AchievementIcon extends StatelessWidget {
           ),
         ],
       ),
-      child: const Icon(
-        Icons.workspace_premium_rounded,
-        color: gold,
-        size: 27,
-      ),
+      child: const Icon(Icons.workspace_premium_rounded, color: gold, size: 27),
     );
   }
 }
@@ -263,30 +223,20 @@ class _AchievementIcon extends StatelessWidget {
 class _XpBadge extends StatelessWidget {
   final int xp;
 
-  const _XpBadge({
-    required this.xp,
-  });
+  const _XpBadge({required this.xp});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 9,
-        vertical: 7,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
       decoration: BoxDecoration(
         color: AppTheme.accent.withValues(alpha: 0.09),
         borderRadius: BorderRadius.circular(11),
-        border: Border.all(
-          color: AppTheme.accent.withValues(alpha: 0.18),
-        ),
+        border: Border.all(color: AppTheme.accent.withValues(alpha: 0.18)),
       ),
       child: Text(
         '+$xp XP',
-        style: Theme.of(context)
-            .textTheme
-            .labelSmall
-            ?.copyWith(
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
           color: AppTheme.accent,
           fontWeight: FontWeight.w700,
         ),

@@ -12,13 +12,7 @@ enum ElementCategory {
   mystical,
 }
 
-enum ElementRarity {
-  common,
-  uncommon,
-  rare,
-  epic,
-  legendary,
-}
+enum ElementRarity { common, uncommon, rare, epic, legendary }
 
 class ElementModel {
   final String id;
@@ -26,7 +20,11 @@ class ElementModel {
   final String nameEn;
   final String nameBn;
 
+  /// String emoji / fallback representation
   final String icon;
+
+  /// Guaranteed vector icon that renders sharply across all devices and simulators
+  final IconData iconData;
 
   final String descriptionEn;
   final String descriptionBn;
@@ -41,6 +39,7 @@ class ElementModel {
     required this.nameEn,
     required this.nameBn,
     required this.icon,
+    this.iconData = Icons.auto_awesome_rounded,
     required this.descriptionEn,
     required this.descriptionBn,
     required this.category,
@@ -53,8 +52,6 @@ class ElementModel {
   }
 
   String getDescription(String languageCode) {
-    return languageCode == 'bn'
-        ? descriptionBn
-        : descriptionEn;
+    return languageCode == 'bn' ? descriptionBn : descriptionEn;
   }
 }

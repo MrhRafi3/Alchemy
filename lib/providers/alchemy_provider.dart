@@ -6,6 +6,7 @@ import '../data/element_data.dart';
 import '../data/recipe_data.dart';
 import '../models/achievement_model.dart';
 import '../models/element_model.dart';
+import '../widgets/alchemical_components.dart';
 
 /// Represents all supported outcomes when attempting to fuse elements.
 enum FusionStatus {
@@ -44,20 +45,36 @@ class FusionResult {
 
   bool get isNewDiscovery => status == FusionStatus.newDiscovery;
 
-  bool get isAlreadyDiscovered =>
-      status == FusionStatus.alreadyDiscovered;
+  bool get isAlreadyDiscovered => status == FusionStatus.alreadyDiscovered;
 
   bool get isInvalid => status == FusionStatus.invalidCombination;
 
   bool get isIncomplete => status == FusionStatus.incomplete;
 }
 
+/// Record of an elemental fusion attempt.
+class FusionHistoryItem {
+  final ElementModel first;
+  final ElementModel second;
+  final ElementModel? result;
+  final bool isNew;
+  final DateTime timestamp;
+
+  const FusionHistoryItem({
+    required this.first,
+    required this.second,
+    this.result,
+    this.isNew = false,
+    required this.timestamp,
+  });
+}
+
 class AlchemyProvider extends ChangeNotifier {
   static const String _languageKey = 'languageCode';
   static const String _xpKey = 'xp';
   static const String _discoveredElementsKey = 'discoveredElements';
-  static const String _unlockedAchievementsKey =
-      'unlockedAchievements';
+  static const String _unlockedAchievementsKey = 'unlockedAchievements';
+  static const String _hapticsKey = 'hapticsEnabled';
 
   static const Set<String> _startingElementIds = {
     'fire',
@@ -68,30 +85,30 @@ class AlchemyProvider extends ChangeNotifier {
 
   final Future<SharedPreferences> Function()? prefsProvider;
 
-  AlchemyProvider({
-    this.prefsProvider,
-  });
+  AlchemyProvider({this.prefsProvider});
 
   String _languageCode = 'en';
 
   String? _firstElementId;
   String? _secondElementId;
 
-  final Set<String> _discoveredElementIds = {
-    ..._startingElementIds,
-  };
-  late Set<String> _discoveredElementIdsView =
-      Set<String>.unmodifiable(_discoveredElementIds);
+  final Set<String> _discoveredElementIds = {..._startingElementIds};
+  late Set<String> _discoveredElementIdsView = Set<String>.unmodifiable(
+    _discoveredElementIds,
+  );
 
   final Set<String> _unlockedAchievementIds = {};
-  late Set<String> _unlockedAchievementIdsView =
-      Set<String>.unmodifiable(_unlockedAchievementIds);
+  late Set<String> _unlockedAchievementIdsView = Set<String>.unmodifiable(
+    _unlockedAchievementIds,
+  );
 
   final List<AchievementModel> _pendingAchievements = [];
+  final List<FusionHistoryItem> _fusionHistory = [];
 
   int _xp = 0;
   bool _levelUpTriggered = false;
   FusionResult? _lastFusionResult;
+  bool _hapticsEnabled = true;
 
   bool _isLoaded = false;
   bool _languageMutatedBeforeLoad = false;
@@ -109,12 +126,13 @@ class AlchemyProvider extends ChangeNotifier {
   Set<String> get discoveredElementIds => _discoveredElementIdsView;
 
   /// Immutable snapshot of unlocked achievement IDs.
-  Set<String> get unlockedAchievementIds =>
-      _unlockedAchievementIdsView;
+  Set<String> get unlockedAchievementIds => _unlockedAchievementIdsView;
 
   int get xp => _xp;
 
   int get discoveryCount => _discoveredElementIds.length;
+
+  int get totalElementCount => ElementData.allElements.length;
 
   int get achievementCount => _unlockedAchievementIds.length;
 
@@ -124,11 +142,15 @@ class AlchemyProvider extends ChangeNotifier {
 
   bool get isLoaded => _isLoaded;
 
+  bool get hapticsEnabled => _hapticsEnabled;
+
+  List<FusionHistoryItem> get fusionHistory =>
+      List<FusionHistoryItem>.unmodifiable(_fusionHistory);
+
   AchievementModel? get pendingAchievement {
     if (_pendingAchievements.isEmpty) {
       return null;
     }
-
     return _pendingAchievements.first;
   }
 
@@ -160,18 +182,17 @@ class AlchemyProvider extends ChangeNotifier {
     if (xpForNextLevel == 0) {
       return 0;
     }
-
     return (currentLevelXp / xpForNextLevel).clamp(0.0, 1.0);
   }
 
   void _refreshDiscoveredSnapshot() {
-    _discoveredElementIdsView =
-        Set<String>.unmodifiable(_discoveredElementIds);
+    _discoveredElementIdsView = Set<String>.unmodifiable(_discoveredElementIds);
   }
 
   void _refreshAchievementsSnapshot() {
-    _unlockedAchievementIdsView =
-        Set<String>.unmodifiable(_unlockedAchievementIds);
+    _unlockedAchievementIdsView = Set<String>.unmodifiable(
+      _unlockedAchievementIds,
+    );
   }
 
   Future<SharedPreferences> _getPrefs() {
@@ -192,9 +213,7 @@ class AlchemyProvider extends ChangeNotifier {
         final prefs = await _getPrefs();
         await action(prefs);
       } catch (error) {
-        debugPrint(
-          'AlchemyProvider persistence write failed: $error',
-        );
+        debugPrint('AlchemyProvider persistence write failed: $error');
       }
     });
     return _pendingWrite;
@@ -221,23 +240,20 @@ class AlchemyProvider extends ChangeNotifier {
         });
       }
 
+      _hapticsEnabled = prefs.getBool(_hapticsKey) ?? true;
+      HapticHelper.enabled = _hapticsEnabled;
+
       final rawSavedXp = prefs.getInt(_xpKey) ?? 0;
       final savedXp = rawSavedXp < 0 ? 0 : rawSavedXp;
 
-      final savedElements = prefs.getStringList(
-        _discoveredElementsKey,
-      );
+      final savedElements = prefs.getStringList(_discoveredElementsKey);
       final validSavedElements = <String>{
         ..._startingElementIds,
         if (savedElements != null)
-          ...savedElements.where(
-            (id) => ElementData.findById(id) != null,
-          ),
+          ...savedElements.where((id) => ElementData.findById(id) != null),
       };
 
-      final savedAchievements = prefs.getStringList(
-        _unlockedAchievementsKey,
-      );
+      final savedAchievements = prefs.getStringList(_unlockedAchievementsKey);
       final validSavedAchievements = <String>{
         if (savedAchievements != null)
           ...savedAchievements.where(
@@ -254,11 +270,8 @@ class AlchemyProvider extends ChangeNotifier {
           ..clear()
           ..addAll(validSavedAchievements);
 
-        // Synchronize unlocked achievement records with restored discoveries
-        // without queuing duplicate unlock notifications or re-awarding XP.
         for (final achievement in AchievementData.all) {
-          if (_discoveredElementIds.length >=
-              achievement.requiredDiscoveries) {
+          if (_discoveredElementIds.length >= achievement.requiredDiscoveries) {
             _unlockedAchievementIds.add(achievement.id);
           }
         }
@@ -266,14 +279,12 @@ class AlchemyProvider extends ChangeNotifier {
         _refreshDiscoveredSnapshot();
         _refreshAchievementsSnapshot();
       } else {
-        // Merge in-memory progress made before async load completed.
         _discoveredElementIds.addAll(validSavedElements);
         _unlockedAchievementIds.addAll(validSavedAchievements);
         _xp += savedXp;
 
         for (final achievement in AchievementData.all) {
-          if (_discoveredElementIds.length >=
-              achievement.requiredDiscoveries) {
+          if (_discoveredElementIds.length >= achievement.requiredDiscoveries) {
             _unlockedAchievementIds.add(achievement.id);
           }
         }
@@ -305,10 +316,17 @@ class AlchemyProvider extends ChangeNotifier {
     }
 
     await _enqueueWrite((prefs) async {
-      await prefs.setString(
-        _languageKey,
-        _languageCode,
-      );
+      await prefs.setString(_languageKey, _languageCode);
+    });
+  }
+
+  Future<void> setHapticsEnabled(bool enabled) async {
+    _hapticsEnabled = enabled;
+    HapticHelper.enabled = enabled;
+    notifyListeners();
+
+    await _enqueueWrite((prefs) async {
+      await prefs.setBool(_hapticsKey, enabled);
     });
   }
 
@@ -322,15 +340,33 @@ class AlchemyProvider extends ChangeNotifier {
     if (_firstElementId == null) {
       _firstElementId = elementId;
       _lastFusionResult = null;
+      HapticHelper.selection();
     } else if (_secondElementId == null) {
       _secondElementId = elementId;
+      HapticHelper.selection();
     } else {
       _firstElementId = elementId;
       _secondElementId = null;
       _lastFusionResult = null;
+      HapticHelper.selection();
     }
 
     notifyListeners();
+  }
+
+  void removeElementSlot(int slotIndex) {
+    if (slotIndex == 0) {
+      _firstElementId = _secondElementId;
+      _secondElementId = null;
+      _lastFusionResult = null;
+      HapticHelper.light();
+      notifyListeners();
+    } else if (slotIndex == 1) {
+      _secondElementId = null;
+      _lastFusionResult = null;
+      HapticHelper.light();
+      notifyListeners();
+    }
   }
 
   void addXp(int amount) {
@@ -359,8 +395,6 @@ class AlchemyProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Reads and clears the transient level-up flag so callers can react once
-  /// without leaving a stale flag set across later interactions.
   bool consumeLevelUpTrigger() {
     if (!_levelUpTriggered) {
       return false;
@@ -373,30 +407,38 @@ class AlchemyProvider extends ChangeNotifier {
 
   FusionResult fuseElements() {
     if (_firstElementId == null || _secondElementId == null) {
-      const incompleteResult = FusionResult(
-        status: FusionStatus.incomplete,
-      );
+      const incompleteResult = FusionResult(status: FusionStatus.incomplete);
       _lastFusionResult = incompleteResult;
       return incompleteResult;
     }
 
     final firstId = _firstElementId!;
     final secondId = _secondElementId!;
+    final firstElement = ElementData.findById(firstId);
+    final secondElement = ElementData.findById(secondId);
 
     _firstElementId = null;
     _secondElementId = null;
     _levelUpTriggered = false;
 
-    final result = RecipeData.findResult(
-      firstId,
-      secondId,
-    );
+    final result = RecipeData.findResult(firstId, secondId);
 
     if (result == null) {
       const invalidResult = FusionResult(
         status: FusionStatus.invalidCombination,
       );
       _lastFusionResult = invalidResult;
+      HapticHelper.error();
+
+      if (firstElement != null && secondElement != null) {
+        _recordHistory(
+          first: firstElement,
+          second: secondElement,
+          result: null,
+          isNew: false,
+        );
+      }
+
       notifyListeners();
       return invalidResult;
     }
@@ -410,6 +452,17 @@ class AlchemyProvider extends ChangeNotifier {
         xpGained: 0,
       );
       _lastFusionResult = repeatResult;
+      HapticHelper.medium();
+
+      if (firstElement != null && secondElement != null) {
+        _recordHistory(
+          first: firstElement,
+          second: secondElement,
+          result: result,
+          isNew: false,
+        );
+      }
+
       notifyListeners();
       return repeatResult;
     }
@@ -435,16 +488,61 @@ class AlchemyProvider extends ChangeNotifier {
       status: FusionStatus.newDiscovery,
       element: result,
       xpGained: xpGained,
-      unlockedAchievements:
-          List<AchievementModel>.unmodifiable(newlyUnlocked),
+      unlockedAchievements: List<AchievementModel>.unmodifiable(newlyUnlocked),
       leveledUp: didLevelUp,
     );
     _lastFusionResult = discoveryResult;
+    HapticHelper.success();
+
+    if (firstElement != null && secondElement != null) {
+      _recordHistory(
+        first: firstElement,
+        second: secondElement,
+        result: result,
+        isNew: true,
+      );
+    }
 
     _saveProgress();
     notifyListeners();
 
     return discoveryResult;
+  }
+
+  void _recordHistory({
+    required ElementModel first,
+    required ElementModel second,
+    required ElementModel? result,
+    required bool isNew,
+  }) {
+    _fusionHistory.insert(
+      0,
+      FusionHistoryItem(
+        first: first,
+        second: second,
+        result: result,
+        isNew: isNew,
+        timestamp: DateTime.now(),
+      ),
+    );
+    if (_fusionHistory.length > 25) {
+      _fusionHistory.removeLast();
+    }
+  }
+
+  /// Intelligently finds a recipe that can currently be crafted from already discovered
+  /// elements, but has not yet been discovered by the user.
+  ElementModel? getCraftableUndiscoveredHint() {
+    for (final entry in RecipeData.recipes.entries) {
+      if (!_discoveredElementIds.contains(entry.value.id)) {
+        final parts = entry.key.split('+');
+        if (_discoveredElementIds.contains(parts[0]) &&
+            _discoveredElementIds.contains(parts[1])) {
+          return entry.value;
+        }
+      }
+    }
+    return null;
   }
 
   List<AchievementModel> _checkAchievementsInternal() {
@@ -480,9 +578,7 @@ class AlchemyProvider extends ChangeNotifier {
     }
 
     final achievement = _pendingAchievements.removeAt(0);
-
     notifyListeners();
-
     return achievement;
   }
 
@@ -491,8 +587,7 @@ class AlchemyProvider extends ChangeNotifier {
   List<AchievementModel> get unlockedAchievements {
     return AchievementData.all
         .where(
-          (achievement) =>
-              _unlockedAchievementIds.contains(achievement.id),
+          (achievement) => _unlockedAchievementIds.contains(achievement.id),
         )
         .toList();
   }
@@ -509,41 +604,49 @@ class AlchemyProvider extends ChangeNotifier {
     _secondElementId = null;
     _lastFusionResult = null;
     _levelUpTriggered = false;
+    HapticHelper.light();
 
+    notifyListeners();
+  }
+
+  Future<void> resetProgress() async {
+    _xp = 0;
+    _firstElementId = null;
+    _secondElementId = null;
+    _lastFusionResult = null;
+    _levelUpTriggered = false;
+    _pendingAchievements.clear();
+    _fusionHistory.clear();
+
+    _discoveredElementIds
+      ..clear()
+      ..addAll(_startingElementIds);
+    _unlockedAchievementIds.clear();
+
+    _refreshDiscoveredSnapshot();
+    _refreshAchievementsSnapshot();
+
+    await _saveProgress();
     notifyListeners();
   }
 
   Future<void> _saveProgress() {
     final xpSnapshot = _xp;
-    final elementsSnapshot = _discoveredElementIds.toList(
-      growable: false,
-    );
+    final elementsSnapshot = _discoveredElementIds.toList(growable: false);
     final achievementsSnapshot = _unlockedAchievementIds.toList(
       growable: false,
     );
 
     return _enqueueWrite((prefs) async {
-      await prefs.setInt(
-        _xpKey,
-        xpSnapshot,
-      );
+      await prefs.setInt(_xpKey, xpSnapshot);
 
-      await prefs.setStringList(
-        _discoveredElementsKey,
-        elementsSnapshot,
-      );
+      await prefs.setStringList(_discoveredElementsKey, elementsSnapshot);
 
-      await prefs.setStringList(
-        _unlockedAchievementsKey,
-        achievementsSnapshot,
-      );
+      await prefs.setStringList(_unlockedAchievementsKey, achievementsSnapshot);
     });
   }
 
-  String text({
-    required String english,
-    required String bangla,
-  }) {
+  String text({required String english, required String bangla}) {
     return _languageCode == 'bn' ? bangla : english;
   }
 }

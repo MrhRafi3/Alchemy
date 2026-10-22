@@ -21,14 +21,10 @@ class AchievementModel {
   });
 
   String getTitle(String languageCode) {
-    return languageCode == 'bn'
-        ? titleBn
-        : titleEn;
+    return languageCode == 'bn' ? titleBn : titleEn;
   }
 
   String getDescription(String languageCode) {
-    return languageCode == 'bn'
-        ? descriptionBn
-        : descriptionEn;
+    return languageCode == 'bn' ? descriptionBn : descriptionEn;
   }
 }

@@ -8,7 +8,7 @@ import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
 import 'theme/app_theme.dart';
 import 'widgets/achievement_unlock_overlay.dart';
-import 'widgets/language_selector.dart';
+import 'widgets/alchemical_components.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,10 +27,7 @@ Future<void> main() async {
 class AlchemyApp extends StatelessWidget {
   final AlchemyProvider? provider;
 
-  const AlchemyApp({
-    super.key,
-    this.provider,
-  });
+  const AlchemyApp({super.key, this.provider});
 
   @override
   Widget build(BuildContext context) {
@@ -67,12 +64,10 @@ class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
   @override
-  State<MainNavigationScreen> createState() =>
-      _MainNavigationScreenState();
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState
-    extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = const [
@@ -82,9 +77,7 @@ class _MainNavigationScreenState
     ProfileScreen(),
   ];
 
-  void _finishAchievementNotification(
-      AlchemyProvider alchemy,
-      ) {
+  void _finishAchievementNotification(AlchemyProvider alchemy) {
     alchemy.consumePendingAchievement();
   }
 
@@ -93,42 +86,15 @@ class _MainNavigationScreenState
     final alchemy = context.watch<AlchemyProvider>();
 
     final titles = [
-      alchemy.text(
-        english: 'Lab',
-        bangla: 'ল্যাব',
-      ),
-      alchemy.text(
-        english: 'Collection',
-        bangla: 'সংগ্রহ',
-      ),
-      alchemy.text(
-        english: 'Discover',
-        bangla: 'আবিষ্কার',
-      ),
-      alchemy.text(
-        english: 'Profile',
-        bangla: 'প্রোফাইল',
-      ),
+      alchemy.text(english: 'Lab', bangla: 'ল্যাব'),
+      alchemy.text(english: 'Collection', bangla: 'সংগ্রহ'),
+      alchemy.text(english: 'Discover', bangla: 'আবিষ্কার'),
+      alchemy.text(english: 'Profile', bangla: 'প্রোফাইল'),
     ];
 
-    final pendingAchievement =
-        alchemy.pendingAchievement;
+    final pendingAchievement = alchemy.pendingAchievement;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          titles[_currentIndex],
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: LanguageSelector(),
-          ),
-        ],
-      ),
       body: Stack(
         children: [
           Positioned.fill(
@@ -156,9 +122,12 @@ class _MainNavigationScreenState
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          if (_currentIndex != index) {
+            HapticHelper.selection();
+            setState(() {
+              _currentIndex = index;
+            });
+          }
         },
         destinations: [
           NavigationDestination(
